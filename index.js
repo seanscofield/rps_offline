@@ -39,19 +39,16 @@ function create ()
     });
 
     // create player circle
-    var player = this.physics.add.image(300, 240, 'circle'); // create player as circle on screen
-    playerBalls.add(player) // add player to group
-    radius = player.displayHeight/2
-    player.body.setCircle(radius); // this sets the radius of the player's collider size
-    player.body.collideWorldBounds = true; // set to True so that player can collide with edge of screen
-    this.player = player // this is needed for the update function below
+    var player = this.physics.add.image(300, 240, 'circle');  // create player as circle on screen
+    playerBalls.add(player)  // add player to group
+    add_circular_collider(player)
+    
+    this.player = player  // this is needed for the update function below
 
-    // create enemy circle (same sort of logic as above)
+    // create enemy circle 
     var enemy = this.physics.add.image(600, 240, 'circle_small');
     enemies.add(enemy)
-    radius = enemy.displayHeight/2
-    enemy.body.setCircle(radius);
-    enemy.body.collideWorldBounds = true;
+    add_circular_collider(enemy)
 
     // make it so that items in the playerBalls group can collide with items in the enemies group
     this.physics.add.collider(playerBalls, enemies);
@@ -62,4 +59,12 @@ function update()
     // get mouse coordinates, and move player towards mouse
     var pointer = this.input.activePointer;
     this.physics.moveToObject(this.player, pointer, 240);
+}
+
+
+function add_circular_collider(image)
+{
+    radius = image.displayHeight / 2  // compute radius of circle as half of image height
+    image.body.setCircle(radius);  // set radius of the player's collider size
+    image.body.collideWorldBounds = true;  // allow player to collide with edge of screen
 }
