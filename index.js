@@ -21,6 +21,7 @@ var game = new Phaser.Game(config);
 function preload ()
 {
     this.load.image('circle', 'assets/white_circle.png');
+    this.load.image('circle_small', 'assets/white_circle_now_working.png');
 }
 
 function create ()
@@ -46,7 +47,7 @@ function create ()
     this.player = player // this is needed for the update function below
 
     // create enemy circle (same sort of logic as above)
-    var enemy = this.physics.add.image(600, 240, 'circle');
+    var enemy = this.physics.add.image(600, 240, 'circle_small');
     enemies.add(enemy)
     radius = enemy.displayHeight/2
     enemy.body.setCircle(radius);
