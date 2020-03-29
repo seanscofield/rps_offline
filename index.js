@@ -40,14 +40,16 @@ function create ()
     // create player circle
     var player = this.physics.add.image(300, 240, 'circle'); // create player as circle on screen
     playerBalls.add(player) // add player to group
-    player.body.setCircle(45); // this sets the radius of the player's collider size
+    radius = player.displayHeight/2
+    player.body.setCircle(radius); // this sets the radius of the player's collider size
     player.body.collideWorldBounds = true; // set to True so that player can collide with edge of screen
     this.player = player // this is needed for the update function below
 
     // create enemy circle (same sort of logic as above)
     var enemy = this.physics.add.image(600, 240, 'circle');
     enemies.add(enemy)
-    enemy.body.setCircle(45);
+    radius = enemy.displayHeight/2
+    enemy.body.setCircle(radius);
     enemy.body.collideWorldBounds = true;
 
     // make it so that items in the playerBalls group can collide with items in the enemies group
