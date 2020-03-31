@@ -2,6 +2,7 @@ var config = {
     type: Phaser.AUTO,
     width: window.innerWidth,
     height: window.innerHeight,
+    "render.transparent": true,
     physics: {
         default: 'arcade',
         arcade: {
@@ -40,6 +41,14 @@ function create ()
         bounceY: 1
     });
 
+    // give the world a width and height of 2000, and center it at (0, 0)
+    this.physics.world.setBounds(0, 0, 2000, 2000);
+
+    // create a white rectangle with the same size of the world (to represent the map)
+    var graphics = this.add.graphics();
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillRect(0, 0, 2000, 2000);
+
     // create player circle
     var player = this.physics.add.image(300, 240, 'air'); // create player as circle on screen
     playerBalls.add(player) // add player to group
@@ -59,13 +68,18 @@ function create ()
     // make it so that items in the playerBalls group can collide with items in the enemies group
     this.physics.add.collider(playerBalls, enemies);
     this.physics.add.collider(enemies, enemies);
+
+    // Make the camera follow the player
+    this.cameras.main.startFollow(player);
 }
 
 function update()
 {
-    // get mouse coordinates, and move player towards mouse
+    // get the mouse pointer, update its world point (it's coordinates with regards to the world),
+    // and move the player in the direction of that world point.
     var pointer = this.input.activePointer;
-    this.physics.moveToObject(this.player, pointer, 600);
+    pointer.updateWorldPoint(this.cameras.main);
+    this.physics.moveTo(this.player, pointer.worldX, pointer.worldY, 600);
 }
 
 
