@@ -14,7 +14,7 @@ class MapArea extends Phaser.GameObjects.Graphics {
 
         this.spawnFood(3000);
 
-        var timedEvent = this.scene.time.addEvent({ delay: 500, callback: this.addOneFood, callbackScope: this, loop: true});
+        var timedEvent = this.scene.time.addEvent({ delay: 10, callback: this.addOneFood, callbackScope: this, loop: true});
     }
 
     spawnFood(numFood) {
@@ -30,6 +30,18 @@ class MapArea extends Phaser.GameObjects.Graphics {
 
     addOneFood() {
         this.spawnFood(1);
+    }
+
+
+    findSafeSpawn() {
+        for (const fish of this.scene.fish.children.entries) {
+            // var dist = distance(this.x, this.y, food.x, food.y);
+            // if (dist < minDist) {
+            //     minDist = dist;
+            //     closestFood = food;
+            // }
+        }
+        return {"x": Math.floor(Math.random()*this.sizeX), "y": Math.floor(Math.random()*this.sizeY)};
     }
 
 }

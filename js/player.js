@@ -7,8 +7,10 @@ class Player extends Phaser.GameObjects.Sprite {
         this.acceleration = config.acceleration;
         this.scale = config.size;
 
+        this.setDepth(-this.scale + 1000);
+
         // var fish = this.scene.add.image(0, 0, config.image_name);
-        var text = this.scene.add.text(-20, -this.displayHeight/2 - 45, 'Sean');
+        var text = this.scene.add.text(-20, -this.displayHeight/2 - 45, config.name);
         text.setColor('white');
 
         this.text = text;
@@ -56,11 +58,15 @@ class Player extends Phaser.GameObjects.Sprite {
         food.destroy();
         this.setScale(0.01+this.scale);
         this.text.setScale(this.scale);
+        this.setDepth(-this.scale + 1000);
     }
 
     eat_player(player) {
+        player.text.destroy();
         player.destroy();
-        this.setScale(player.scale+this.scale);
+        this.setScale(player.scale/5+this.scale);
+        this.text.setScale(this.scale);
+        this.setDepth(-this.scale + 1000);
     }
 
     reducePlayerSize(fraction) {
@@ -81,24 +87,24 @@ class Player extends Phaser.GameObjects.Sprite {
 class MainPlayer extends Player {
 
     eat(food) {
-        food.destroy();
-        this.setScale(0.01+this.scale);
-        this.text.setScale(this.scale);
+        super.eat(food);
         this.scene.cameras.main.zoomTo(1/this.scale, 2000);
     }
 
     eat_player(player) {
-        player.text.destroy();
-        player.destroy();
-        this.setScale(player.scale/5+this.scale);
+        super.eat_player(player)
         this.scene.cameras.main.zoomTo(1/this.scale, 2000);
-        this.text.setScale(this.scale);
+    }
+
+
+    destroy() {
+        this.scene.add_starting_text(this.scene);
+        super.destroy();
     }
 
 
     update() {
         super.update();
-
 
         var keyObj = this.scene.input.keyboard.addKey('Space');  // Get key object
         var isDown = keyObj.isDown;
@@ -185,7 +191,7 @@ class AIPlayer extends Player {
             var y = Math.sin(rad_angle) * this.acceleration;
             this.body.setAcceleration(x, y);
             var dist = distance(this.closestFood.x, this.closestFood.y, this.x, this.y);
-            if (dist < 150) {
+            if (dist < 220) {
                 this.isEating = true;
                 this.setTexture("red_fish_eating");
                 this.body.maxSpeed = this.maxSpeed + 100;
