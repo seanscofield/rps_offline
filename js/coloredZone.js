@@ -12,9 +12,9 @@ class MapArea extends Phaser.GameObjects.Graphics {
         this.sizeY = config.sizeY;
         config.scene.add.existing(this);
 
-        this.spawnFood(3000);
+        this.spawnFood(150);
 
-        var timedEvent = this.scene.time.addEvent({ delay: 10, callback: this.addOneFood, callbackScope: this, loop: true});
+        var timedEvent = this.scene.time.addEvent({ delay: 200, callback: this.addOneFood, callbackScope: this, loop: true});
     }
 
     spawnFood(numFood) {

@@ -1,15 +1,15 @@
 class Player extends Phaser.GameObjects.Sprite {
     constructor(config) {
-        super(config.scene, config.x, config.y, config.image_name);
+        super(config.scene, config.x, config.y, config.type);
         config.scene.add.existing(this);
 
         this.maxSpeed = config.maxSpeed;
         this.acceleration = config.acceleration;
         this.scale = config.size;
+        this.player_type = config.type;
 
         this.setDepth(-this.scale + 1000);
 
-        // var fish = this.scene.add.image(0, 0, config.image_name);
         var text = this.scene.add.text(-20, -this.displayHeight/2 - 45, config.name);
         text.setColor('white');
 
@@ -21,31 +21,26 @@ class Player extends Phaser.GameObjects.Sprite {
         });
 
         this.scene.physics.world.enable(this);
-        this.addCollider(false);
+
+        var radius = this.displayHeight/2;
+        this.body.setCircle(radius/this.scale, 0, 0); // set radius of the player's collider size
+        this.body.collideWorldBounds = true; // allow player to collide with edge of screen
+
+        // this.ts = this.scene.add.tileSprite(this.x, this.y, window.width, window.height, 'texture');
 
         // shrink player every 1 second
         // var timedEvent = this.scene.time.addEvent({ delay: 1000, callback: this.reducePlayerSize, callbackScope: this, loop: true});
+    }
+
+    update_type(type) {
+        this.setTexture(type);
+        this.player_type = type;
     }
 
 
     destroy() {
         this.text.destroy();
         super.destroy();
-    }
-
-
-    addCollider(is_flipped) {
-        if (is_flipped) {
-            var radius = this.displayHeight/2+1; // compute radius of circle as half of image height
-            var rad_angle = Phaser.Math.DEG_TO_RAD*this.angle;
-            this.body.setCircle(radius/this.scale, 0, 0); // set radius of the player's collider size
-            this.body.collideWorldBounds = true; // allow player to collide with edge of screen
-        } else {
-            var radius = this.displayHeight/2+1; // compute radius of circle as half of image height
-            var rad_angle = Phaser.Math.DEG_TO_RAD*this.angle;
-            this.body.setCircle(radius/this.scale, 0, 0); // set radius of the player's collider size
-            this.body.collideWorldBounds = true; // allow player to collide with edge of screen
-        }
     }
 
     updatePhysics() {
@@ -88,12 +83,12 @@ class MainPlayer extends Player {
 
     eat(food) {
         super.eat(food);
-        this.scene.cameras.main.zoomTo(1/this.scale, 2000);
+        this.scene.cameras.main.zoomTo((1/this.scale)/2, 2000);
     }
 
     eat_player(player) {
         super.eat_player(player)
-        this.scene.cameras.main.zoomTo(1/this.scale, 2000);
+        this.scene.cameras.main.zoomTo((1/this.scale)/2, 2000);
     }
 
 
@@ -110,12 +105,8 @@ class MainPlayer extends Player {
         var isDown = keyObj.isDown;
         var velocity = this.velocity;
         if (isDown) {
-            this.isEating = true;
-            this.setTexture("red_fish_eating");
             this.body.maxSpeed = this.maxSpeed + 100;
         } else {
-            this.isEating = false;
-            this.setTexture("red_fish_transparent");
             this.body.maxSpeed = this.maxSpeed;
         }
 
@@ -124,7 +115,7 @@ class MainPlayer extends Player {
 
         var rad_angle = Phaser.Math.Angle.Between(this.x, this.y, pointer.worldX, pointer.worldY);
         var deg_angle = Phaser.Math.RAD_TO_DEG * rad_angle;
-        this.setAngle(deg_angle);
+        // this.setAngle(deg_angle);
 
         var dist = distance(this.x, this.y, pointer.worldX, pointer.worldY);
         if (dist > 15) {
@@ -139,15 +130,6 @@ class MainPlayer extends Player {
             this.scene.physics.moveTo(this, pointer.worldX, pointer.worldY, 0);
         }
 
-        var radius = this.displayHeight;
-        if (Math.abs(this.angle) > 90) {
-            this.setFlipY(true);
-            this.addCollider(true);
-        } else {
-            this.setFlipY(false);
-            this.addCollider(false);
-        }
-
     }
 }
 
@@ -159,56 +141,61 @@ var distance = function(x1, y1, x2, y2) {
 
 class AIPlayer extends Player {
 
-    findClosestFood(foodGroup) {
-        var closestFood = undefined;
+    findClosestItem(items, me) {
+        var closestItem = undefined;
         var minDist = 99999999999;
 
-        if (foodGroup.children.entries.length > 0) {
-            for (const food of foodGroup.children.entries) {
-                var dist = distance(this.x, this.y, food.x, food.y);
-                if (dist < minDist) {
-                    minDist = dist;
-                    closestFood = food;
+        if (items.children.entries.length > 0) {
+            for (const item of items.children.entries) {
+                if (item != me) {
+                    var dist = distance(this.x, this.y, item.x, item.y);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closestItem = item;
+                    }
                 }
             }
-            return closestFood;
+            return closestItem;
         } else {
             return undefined;
         }
     }
 
-    update(foodGroup) {
+
+
+    update(foodGroup, playerGroup) {
         super.update();
-        
+
+        var mapping = {'rock': ['scissors', 'lizard'],
+                       'paper': ['rock', 'spock'],
+                       'scissors': ['paper', 'lizard'],
+                       'lizard': ['spock', 'paper'],
+                       'spock': ['scissors', 'rock']
+                      }
+
         if (this.closestFood == undefined || this.closestFood.active != true) {
-            var closestFood = this.findClosestFood(foodGroup);
+            var closestFood = this.findClosestItem(foodGroup);
             this.closestFood = closestFood;
-        } else {
-            var rad_angle = Phaser.Math.Angle.Between(this.x, this.y, this.closestFood.x, this.closestFood.y);
-            var deg_angle = Phaser.Math.RAD_TO_DEG * rad_angle;
-            this.setAngle(deg_angle);
-            var x = Math.cos(rad_angle) * this.acceleration;    // accelerateToObject 
-            var y = Math.sin(rad_angle) * this.acceleration;
-            this.body.setAcceleration(x, y);
-            var dist = distance(this.closestFood.x, this.closestFood.y, this.x, this.y);
-            if (dist < 220) {
-                this.isEating = true;
-                this.setTexture("red_fish_eating");
-                this.body.maxSpeed = this.maxSpeed + 100;
-            } else {
-                this.isEating = false;
-                this.setTexture("red_fish_transparent");
-                this.body.maxSpeed = this.maxSpeed;
-            }
         }
 
-        var radius = this.displayHeight;
-        if (Math.abs(this.angle) > 90) {
-            this.setFlipY(true);
-            this.addCollider(true);
-        } else {
-            this.setFlipY(false);
-            this.addCollider(false);
+        // if (this.closestPlayer == undefined || this.closestPlayer.active != true) {
+            var closestPlayer = this.findClosestItem(playerGroup, this);
+            this.closestPlayer = closestPlayer;
+        // }
+
+        var rad_angle = Phaser.Math.Angle.Between(this.x, this.y, this.closestPlayer.x, this.closestPlayer.y);
+        var deg_angle = Phaser.Math.RAD_TO_DEG * rad_angle;
+        var x = Math.cos(rad_angle) * this.acceleration;    // accelerateToObject 
+        var y = Math.sin(rad_angle) * this.acceleration;
+
+        if (this.closestPlayer != undefined) {
+            if (mapping[this.closestPlayer.player_type].includes(this.player_type)) {
+                this.body.setAcceleration(-x, -y);
+            } else if (mapping[this.player_type].includes(this.closestPlayer.player_type)) {
+                this.body.setAcceleration(x, y);
+            } 
         }
+
     }
+
 }

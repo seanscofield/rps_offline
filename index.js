@@ -7,7 +7,7 @@ var config = {
     physics: {
         default: 'arcade',
         arcade: {
-            debug: false,
+            debug: true,
             gravity: { y: 0 }
         },
         matter: {
@@ -42,6 +42,12 @@ function preload ()
     this.load.image('air', 'assets/SVG/sign-air.svg');
     this.load.image('earth', 'assets/SVG/sign-earth.svg');
     this.load.image('food', 'assets/SVG/sign-water.svg');
+    this.load.image('rock', 'assets/Rock.png');
+    this.load.image('paper', 'assets/Paper.png');
+    this.load.image('scissors', 'assets/Scissors.png');
+    this.load.image('lizard', 'assets/Lizard.png');
+    this.load.image('spock', 'assets/Spock.png');
+    this.load.image('texture', 'assets/texture.jpg');
 
     this.load.html('nameform', 'assets/text/nameform.html');
 }
@@ -62,42 +68,30 @@ function create ()
     this.fish = fish;
 
     // give the world a width and height of 4000, and center it at (0, 0)
-    this.physics.world.setBounds(0, 0, 20000, 20000);
+    this.physics.world.setBounds(0, 0, 10000, 10000);
 
-    var map = new MapArea({scene:this, x:0, y:0, sizeX:20000, sizeY:20000, color:'blue'});
+    var map = new MapArea({scene:this, x:0, y:0, sizeX:10000, sizeY:10000, color:'blue'});
     this.map = map;
 
-    // player.updatePhysics();
-
-
-    for (element of ['red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent',
-        'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent',
-        'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent',
-        'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent',
-        'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent',
-        'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent',
-        'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent',
-        'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent',
-        'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent',
-        'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent',
-        'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent',
-        'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent',
-        'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent',
-        'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent',
-        'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent',
-        'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent', 'red_fish_transparent']) {
-        // create enemy circle
-        x_offset = Math.floor(Math.random()*20000);
-        y_offset = Math.floor(Math.random()*20000);
-        let enemy = new AIPlayer({scene:this,x:600+x_offset,y:250 + y_offset,size:1, acceleration:1400, maxSpeed:350, image_name:element});
-        fish.add(enemy);
+    var totalPlayers = this.fish.children.entries.length;
+    for (var i = totalPlayers; i < 50; i+=1) {
+        var mapping = ['rock', 'paper', 'scissors', 'lizard', 'spock'];
+        var image = mapping[Math.floor(Math.random() * 4) + 1];
+        var spawnPoint = findBestSpawnPoint(10000, 10000, this.fish.children.entries);
+        let enemy = new AIPlayer({scene:this,x:spawnPoint.x,y:spawnPoint.y,size:1, acceleration:1400, maxSpeed:350, type:image});
+        this.fish.add(enemy);
+        enemy.body.collideWorldBounds = true;
         enemy.updatePhysics();
     }
+
+    var timedEvent = this.time.addEvent({ delay: 1000, callback: spawnAIPlayers, callbackScope: this, loop: true});
+
+    this.add.grid(5000, 5000, 10000, 10000, 64, 64, 0x000000 );
 
     this.fish = fish;
 
     // make it so that items in the playerBalls group can collide with items in the enemies group
-    this.physics.add.overlap(fish, food, eat, null, this);
+    this.physics.add.overlap(fish, food, transform, null, this);
     this.physics.add.overlap(fish, fish, collision, null, this);
 
     var scene = this;
@@ -105,6 +99,7 @@ function create ()
     scene.cameras.main.setZoom(0.05);
     this.add_starting_text(this);
 
+    // config.scene.add.tileSprite(500, 500, 1000, 1000, 'texture');
 
 }
 
@@ -137,13 +132,14 @@ function add_starting_text(scene) {
                 //  Populate the text with whatever they typed in
                 // text.setText('Welcome ' + inputText.value);
                 // create player circle
-                y = scene;
-                var spawnPoint = scene.map.findSafeSpawn();
-                let player = new MainPlayer({scene:scene,x:spawnPoint.x,y:spawnPoint.y,size:1,acceleration:3500,maxSpeed:400,image_name:"red_fish_trimmed", name:inputText.value});
+                // var spawnPoint = scene.map.findSafeSpawn();
+                var spawnPoint = {"x": 5000, "y": 5000};
+                let player = new MainPlayer({scene:scene,x:spawnPoint.x,y:spawnPoint.y,size:1,acceleration:3500,maxSpeed:400,type:"rock", name:inputText.value});
                 player.updatePhysics();
                 scene.fish.add(player);
-                scene.cameras.main.zoomTo(1, 3000);
+                scene.cameras.main.zoomTo(0.67, 3000);
                 scene.cameras.main.startFollow(player);
+                player.body.collideWorldBounds = true;
 
             }
             else
@@ -169,33 +165,80 @@ function add_starting_text(scene) {
     });    
 }
 
+var distance = function(x1, y1, x2, y2) {
+    return Math.sqrt( Math.pow((x1-x2), 2) + Math.pow((y1-y2), 2) );
+}
 
-function eat(fish, food) {
-    if (fish.isEating) {
-        var angle_between_fish_and_food = Phaser.Math.Angle.Between(fish.x, fish.y, food.x, food.y)*Phaser.Math.RAD_TO_DEG;
-        if (Math.abs(angle_between_fish_and_food - fish.angle) < 28) {
-            fish.eat(food);
+function distanceFromNearestPlayer(x, y, players) {
+    var closestDist = null;
+    var closestSpot = null;
+    for (player of players) {
+        curDist = distance(player.x, player.y, x, y);
+        if (closestDist == null || curDist < closestDist) {
+            closestDist = curDist;
+            closestSpot = {"x": x, "y": y};
+        }
+    }
+    return closestDist;
+}
+
+function findBestSpawnPoint(map_width, map_height, existing_players) {
+    var bestSpot = {"x": map_width/2, "y": map_height/2};
+    var furthestDistance = -1;
+    var curDist;
+
+    for (var i = Math.floor(Math.random() * 999) + 1; i < map_width; i += 1000) {
+        for (var j = Math.floor(Math.random() * 999) + 1; j < map_height; j += 1000) {
+            curDist = distanceFromNearestPlayer(i, j, existing_players);
+            if (curDist != null && curDist > furthestDistance) {
+                bestSpot = {"x": i, "y": j};
+                furthestDistance = curDist;
+            }
         }
     }
 
+    return bestSpot;
 
 }
 
-function collision(fish_1, fish_2) {
-    if (fish_1.scale > fish_2.scale) {
-        var bigger_fish = fish_1;
-        var smaller_fish = fish_2;
-    } else {
-        var bigger_fish = fish_2;
-        var smaller_fish = fish_1;
+function spawnAIPlayers() {
+    var totalPlayers = this.fish.children.entries.length;
+    for (var i = totalPlayers; i < 50; i+=1) {
+        var mapping = ['rock', 'paper', 'scissors', 'lizard', 'spock'];
+        var image = mapping[Math.floor(Math.random() * 4) + 1];
+        var spawnPoint = findBestSpawnPoint(10000, 10000, this.fish.children.entries);
+        let enemy = new AIPlayer({scene:this,x:spawnPoint.x,y:spawnPoint.y,size:1, acceleration:1400, maxSpeed:350, type:image});
+        this.fish.add(enemy);
+        enemy.body.collideWorldBounds = true;
+        enemy.updatePhysics();
     }
+}
 
-    var angle_between_fish_and_food = Phaser.Math.Angle.Between(bigger_fish.x, bigger_fish.y, smaller_fish.x, smaller_fish.y)*Phaser.Math.RAD_TO_DEG;
-    if (Math.abs(angle_between_fish_and_food - fish_1.angle) < 28 && bigger_fish.isEating) {
-        bigger_fish.eat_player(smaller_fish);
-    } else {
-        bigger_fish.body.setAcceleration(0, 0);
-        smaller_fish.body.setAcceleration(0, 0);
+function transform(fish, food) {
+    var mapping = ['rock', 'paper', 'scissors', 'lizard', 'spock'];
+    var new_type = mapping[Math.floor(Math.random() * 4) + 1];
+    fish.update_type(new_type);
+    food.destroy();
+}
+
+
+function eat(fish, food) {
+    fish.eat(food);
+}
+
+function collision(player_1, player_2) {
+    var mapping = {'rock': ['scissors', 'lizard'],
+                   'paper': ['rock', 'spock'],
+                   'scissors': ['paper', 'lizard'],
+                   'lizard': ['spock', 'paper'],
+                   'spock': ['scissors', 'rock']
+                  }
+    var player_1_type = player_1.player_type;
+    var player_2_type = player_2.player_type;
+    if (mapping[player_1_type].includes(player_2_type)) {
+        player_2.destroy();
+    } else if (mapping[player_2_type].includes(player_1_type)) {
+        player_1.destroy();
     }
 
 }
@@ -205,6 +248,6 @@ function update()
     // get the mouse pointer, update its world point (it's coordinates with regards to the world),
     // and move the player in the direction of that world point.
     for (fish of this.fish.children.entries) {
-        fish.update(this.food);
+        fish.update(this.food, this.fish);
     }
 }
