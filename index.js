@@ -64,10 +64,11 @@ gameScene.create = function()
     this.physics.add.overlap(this.players, this.food, transformPlayerType, null, this);
     this.physics.add.overlap(this.players, this.players, playerCollision, null, this);
 
-    // Display the menu (which is basically just a text box asking for your name)
-    this.showMenuScene();
+    this.cameras.main.setBackgroundColor(0xd1f5ff);
+    this.cameras.main.setZoom(0.075);
 
-    this.cameras.main.setBackgroundColor(0xbbc2c4)
+    // Display the menu (which is basically just a text box asking for your name)
+    this.showMenuScene(5000, 5000);
 }
 
 gameScene.update = function()
@@ -78,19 +79,18 @@ gameScene.update = function()
     }
 }
 
-gameScene.showMenuScene = function() {
+gameScene.showMenuScene = function(x, y) {
     // Make the camera follow the player
 
     var scene = this;
-    var element = scene.add.dom(5000, 5000).createFromHTML('<input type="text" name="nameField" placeholder="Enter your name" size="15" style="font-size: 32px;">'+
+    var element = scene.add.dom(x, y).createFromHTML('<input type="text" name="nameField" placeholder="Enter your name" size="15" style="font-size: 32px;">'+
                                                            '<input type="button" name="playButton" value="Let\'s Play" style="font-size: 32px">');
     element.originX = 0;
     element.originY = 0;
 
-    scene.cameras.main.zoomTo(0.075, 1000);
-    element.setScale(15);
-    element.x = 5000 - element.width*element.scale/2;
-    element.y = 5000 - element.height*element.scale/2;
+    element.setScale(1/scene.cameras.main.zoom);
+    element.x = x - element.width*element.scale/2;
+    element.y = y - element.height*element.scale/2;
 
     element.addListener('click');
 
