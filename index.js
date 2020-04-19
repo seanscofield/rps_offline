@@ -1,3 +1,6 @@
+// create a new scene named "Game"
+let gameScene = new Phaser.Scene('Game');
+
 var config = {
     type: Phaser.AUTO,
     width: window.innerWidth,
@@ -10,23 +13,8 @@ var config = {
             debug: true,
             gravity: { y: 0 }
         },
-        matter: {
-            enableSleeping: true,
-            gravity: {
-                y: 0
-            },
-            debug: {
-                showBody: true,
-                showStaticBody: true
-            }
-        }
     },
-    scene: {
-        preload: preload,
-        create: create,
-        update: update,
-        add_starting_text: add_starting_text
-    },
+    scene: gameScene,
     dom: {
         createContainer: true
     },
@@ -34,86 +22,77 @@ var config = {
 
 var game = new Phaser.Game(config);
 
-function preload ()
-{
 
-    this.load.image('red_fish_transparent', 'assets/red_fish_trimmed.png');
-    this.load.image('red_fish_eating', 'assets/red_fish_eating_trimmed_3.png');
-    this.load.image('air', 'assets/SVG/sign-air.svg');
-    this.load.image('earth', 'assets/SVG/sign-earth.svg');
+gameScene.preload = function()
+{
     this.load.image('food', 'assets/SVG/sign-water.svg');
     this.load.image('rock', 'assets/Rock.png');
     this.load.image('paper', 'assets/Paper.png');
     this.load.image('scissors', 'assets/Scissors.png');
     this.load.image('lizard', 'assets/Lizard.png');
     this.load.image('spock', 'assets/Spock.png');
-    this.load.image('texture', 'assets/texture.jpg');
 
-    this.load.html('nameform', 'assets/text/nameform.html');
+    this.load.html('nameform', 'assets/text/newnameform.html');
 }
 
-function create ()
+gameScene.create = function()
 {
-    // create a collision group for player circle
-    var fish = this.physics.add.group({
+    // The maximum number of players
+    this.maxPlayers = 50;
+
+    // create a collision group for player circles
+    this.players = this.physics.add.group({
         bounceX: 0.5,
         bounceY: 0.5,
     });
 
     // create a collision group for food circles
-    var food = this.physics.add.group({
+    this.food = this.physics.add.group({
     });
 
-    this.food = food;
-    this.fish = fish;
-
-    // give the world a width and height of 4000, and center it at (0, 0)
+    // Set the world bounds as a rectangle that starts at (0, 0) and has a width and height
     this.physics.world.setBounds(0, 0, 10000, 10000);
 
-    var map = new MapArea({scene:this, x:0, y:0, sizeX:10000, sizeY:10000, color:'blue'});
-    this.map = map;
+    // Create a map area that has the same position and size as the world bounds. The
+    // map area is essentially a grid overlay, but it also handles spawning food
+    this.map = new MapArea({scene:this, x:0, y:0, sizeX:10000, sizeY:10000, color:'blue'});
 
-    var totalPlayers = this.fish.children.entries.length;
-    for (var i = totalPlayers; i < 50; i+=1) {
-        var mapping = ['rock', 'paper', 'scissors', 'lizard', 'spock'];
-        var image = mapping[Math.floor(Math.random() * 4) + 1];
-        var spawnPoint = findBestSpawnPoint(10000, 10000, this.fish.children.entries);
-        let enemy = new AIPlayer({scene:this,x:spawnPoint.x,y:spawnPoint.y,size:1, acceleration:1400, maxSpeed:350, type:image});
-        this.fish.add(enemy);
-        enemy.body.collideWorldBounds = true;
-        enemy.updatePhysics();
-    }
-
+    // On an interval, check if AI Players need to be spawned
     var timedEvent = this.time.addEvent({ delay: 1000, callback: spawnAIPlayers, callbackScope: this, loop: true});
 
-    this.add.grid(5000, 5000, 10000, 10000, 64, 64, 0x000000 );
+    // make it so that 
+    this.physics.add.overlap(this.players, this.food, transform, null, this);
+    this.physics.add.overlap(this.players, this.players, playerCollision, null, this);
 
-    this.fish = fish;
-
-    // make it so that items in the playerBalls group can collide with items in the enemies group
-    this.physics.add.overlap(fish, food, transform, null, this);
-    this.physics.add.overlap(fish, fish, collision, null, this);
-
-    var scene = this;
-    this.add_starting_text = add_starting_text;
-    scene.cameras.main.setZoom(0.05);
-    this.add_starting_text(this);
-
-    // config.scene.add.tileSprite(500, 500, 1000, 1000, 'texture');
-
+    // Display the menu (which is basically just a text box asking for your name)
+    this.showMenuScene();
 }
 
-function add_starting_text(scene) {
+gameScene.update = function()
+{
+    // Run each player's update function
+    for (player of this.players.children.entries) {
+        player.update();
+    }
+}
+
+gameScene.showMenuScene = function() {
     // Make the camera follow the player
 
-    var element = this.add.dom(10000, 15000).createFromCache('nameform');
+    var scene = this;
+    var element = scene.add.dom(5000, 5000).createFromHTML('<input type="text" name="nameField" placeholder="Enter your name" size="15" style="font-size: 32px;">'+
+                                                          '<input type="button" name="playButton" value="Let\'s Play" style="font-size: 32px">');
+    element.originX = 0;
+    element.originY = 0;
 
-    scene.cameras.main.zoomTo(0.05, 2000);
-    element.setScale(20);
+    scene.cameras.main.zoomTo(0.075, 1000);
+    element.setScale(15);
+    element.x = 5000 - element.width*element.scale/2;
+    element.y = 5000 - element.height*element.scale/2;
 
     element.addListener('click');
 
-    scene.cameras.main.startFollow(element);
+    scene.cameras.main.startFollow(element,null,null,null,-element.width*element.scale/2, -element.height*element.scale/2);
 
     element.on('click', function (event) {
 
@@ -130,39 +109,16 @@ function add_starting_text(scene) {
                 this.setVisible(false);
 
                 //  Populate the text with whatever they typed in
-                // text.setText('Welcome ' + inputText.value);
                 // create player circle
-                // var spawnPoint = scene.map.findSafeSpawn();
-                var spawnPoint = {"x": 5000, "y": 5000};
+                var spawnPoint = findBestSpawnPoint(10000, 10000, scene.players.children.entries);
                 let player = new MainPlayer({scene:scene,x:spawnPoint.x,y:spawnPoint.y,size:1,acceleration:3500,maxSpeed:400,type:"rock", name:inputText.value});
-                player.updatePhysics();
-                scene.fish.add(player);
-                scene.cameras.main.zoomTo(0.67, 3000);
+                scene.players.add(player);
+                scene.cameras.main.setZoom(0.67);
                 scene.cameras.main.startFollow(player);
                 player.body.collideWorldBounds = true;
-
             }
-            else
-            {
-                //  Flash the prompt
-                this.scene.tweens.add({
-                    targets: text,
-                    alpha: 0.2,
-                    duration: 250,
-                    ease: 'Power3',
-                    yoyo: true
-                });
-                        }
         }
-
     });
- 
-    this.tweens.add({
-        targets: element,
-        y: 10000,
-        duration: 3000,
-        ease: 'Power3'
-    });    
 }
 
 var distance = function(x1, y1, x2, y2) {
@@ -202,31 +158,26 @@ function findBestSpawnPoint(map_width, map_height, existing_players) {
 }
 
 function spawnAIPlayers() {
-    var totalPlayers = this.fish.children.entries.length;
-    for (var i = totalPlayers; i < 50; i+=1) {
+    var totalPlayers = this.players.children.entries.length;
+    for (var i = totalPlayers; i < this.maxPlayers; i+=1) {
         var mapping = ['rock', 'paper', 'scissors', 'lizard', 'spock'];
         var image = mapping[Math.floor(Math.random() * 4) + 1];
-        var spawnPoint = findBestSpawnPoint(10000, 10000, this.fish.children.entries);
+        var spawnPoint = findBestSpawnPoint(10000, 10000, this.players.children.entries);
         let enemy = new AIPlayer({scene:this,x:spawnPoint.x,y:spawnPoint.y,size:1, acceleration:1400, maxSpeed:350, type:image});
-        this.fish.add(enemy);
+        this.players.add(enemy);
         enemy.body.collideWorldBounds = true;
-        enemy.updatePhysics();
     }
 }
 
-function transform(fish, food) {
+function transform(player, food) {
     var mapping = ['rock', 'paper', 'scissors', 'lizard', 'spock'];
     var new_type = mapping[Math.floor(Math.random() * 4) + 1];
-    fish.update_type(new_type);
+    player.update_type(new_type);
     food.destroy();
 }
 
 
-function eat(fish, food) {
-    fish.eat(food);
-}
-
-function collision(player_1, player_2) {
+function playerCollision(player_1, player_2) {
     var mapping = {'rock': ['scissors', 'lizard'],
                    'paper': ['rock', 'spock'],
                    'scissors': ['paper', 'lizard'],
@@ -241,13 +192,4 @@ function collision(player_1, player_2) {
         player_1.destroy();
     }
 
-}
-
-function update()
-{
-    // get the mouse pointer, update its world point (it's coordinates with regards to the world),
-    // and move the player in the direction of that world point.
-    for (fish of this.fish.children.entries) {
-        fish.update(this.food, this.fish);
-    }
 }

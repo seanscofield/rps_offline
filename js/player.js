@@ -3,76 +3,45 @@ class Player extends Phaser.GameObjects.Sprite {
         super(config.scene, config.x, config.y, config.type);
         config.scene.add.existing(this);
 
+        // set various attributes
         this.maxSpeed = config.maxSpeed;
         this.acceleration = config.acceleration;
         this.scale = config.size;
         this.player_type = config.type;
 
-        this.setDepth(-this.scale + 1000);
-
-        var text = this.scene.add.text(-20, -this.displayHeight/2 - 45, config.name);
-        text.setColor('white');
-
-        this.text = text;
-        text.setOrigin(0.5)
-
-        text.setStyle({
-            align: 'center',
-        });
-
+        // enable physics on this sprite, and add a circular collider with a max speed
         this.scene.physics.world.enable(this);
-
         var radius = this.displayHeight/2;
-        this.body.setCircle(radius/this.scale, 0, 0); // set radius of the player's collider size
-        this.body.collideWorldBounds = true; // allow player to collide with edge of screen
+        this.body.setCircle(radius, 0, 0);
+        this.body.maxSpeed = this.maxSpeed;
 
-        // this.ts = this.scene.add.tileSprite(this.x, this.y, window.width, window.height, 'texture');
-
-        // shrink player every 1 second
-        // var timedEvent = this.scene.time.addEvent({ delay: 1000, callback: this.reducePlayerSize, callbackScope: this, loop: true});
+        // Create text gameobject for the player's name. We'll make this follow the character in the update function
+        this.text = this.scene.add.text(-20, -this.displayHeight/2 - 45, config.name,
+                                       {align: 'center', color: 'white'}).setOrigin(0.5);
     }
 
+    /*
+     * Update player's type (type will be one of 'rock', 'paper', 'scissors', 'lizard', 'spock')
+     */
     update_type(type) {
         this.setTexture(type);
         this.player_type = type;
     }
 
 
+    /*
+     * Destroy player and the text that follows it
+     */
     destroy() {
         this.text.destroy();
         super.destroy();
     }
 
-    updatePhysics() {
-        this.body.maxSpeed = this.maxSpeed;
-    }
-
-
-
-    eat(food) {
-        food.destroy();
-        this.setScale(0.01+this.scale);
-        this.text.setScale(this.scale);
-        this.setDepth(-this.scale + 1000);
-    }
-
-    eat_player(player) {
-        player.text.destroy();
-        player.destroy();
-        this.setScale(player.scale/5+this.scale);
-        this.text.setScale(this.scale);
-        this.setDepth(-this.scale + 1000);
-    }
-
-    reducePlayerSize(fraction) {
-        this.setScale(0.975*this.scale);
-    }
-
+    /*
+     * Update method that should be called by the update method in the scene.
+     * This method is currently just responsible for updating the position of the text.
+     */
     update() {
-        var RotateAround = Phaser.Math.RotateAround;
-
-        // These are the original positions, at rotation 0.
-        var rad_angle = Phaser.Math.DEG_TO_RAD*(this.angle);
         this.text.x = this.body.x + this.displayHeight/2;
         this.text.y = this.body.y - 45*this.scale;
     }
@@ -81,19 +50,8 @@ class Player extends Phaser.GameObjects.Sprite {
 
 class MainPlayer extends Player {
 
-    eat(food) {
-        super.eat(food);
-        this.scene.cameras.main.zoomTo((1/this.scale)/2, 2000);
-    }
-
-    eat_player(player) {
-        super.eat_player(player)
-        this.scene.cameras.main.zoomTo((1/this.scale)/2, 2000);
-    }
-
-
     destroy() {
-        this.scene.add_starting_text(this.scene);
+        this.scene.showMenuScene();
         super.destroy();
     }
 
@@ -101,9 +59,8 @@ class MainPlayer extends Player {
     update() {
         super.update();
 
-        var keyObj = this.scene.input.keyboard.addKey('Space');  // Get key object
+        var keyObj = this.scene.input.keyboard.addKey('Space');
         var isDown = keyObj.isDown;
-        var velocity = this.velocity;
         if (isDown) {
             this.body.maxSpeed = this.maxSpeed + 100;
         } else {
@@ -113,19 +70,12 @@ class MainPlayer extends Player {
         var pointer = this.scene.input.activePointer;
         pointer.updateWorldPoint(this.scene.cameras.main);
 
-        var rad_angle = Phaser.Math.Angle.Between(this.x, this.y, pointer.worldX, pointer.worldY);
-        var deg_angle = Phaser.Math.RAD_TO_DEG * rad_angle;
-        // this.setAngle(deg_angle);
-
         var dist = distance(this.x, this.y, pointer.worldX, pointer.worldY);
         if (dist > 15) {
-            // this.scene.physics.moveTo(this, pointer.worldX, pointer.worldY, velocity);
-            // var new_angle = Math.atan2(pointer.worldY - this.y, pointer.worldX - this.x);
-            var x = Math.cos(rad_angle) * this.acceleration;    // accelerateToObject 
+            var rad_angle = Phaser.Math.Angle.Between(this.x, this.y, pointer.worldX, pointer.worldY);
+            var x = Math.cos(rad_angle) * this.acceleration;
             var y = Math.sin(rad_angle) * this.acceleration;
-
             this.body.setAcceleration(x, y);
-
         } else {
             this.scene.physics.moveTo(this, pointer.worldX, pointer.worldY, 0);
         }
@@ -163,8 +113,10 @@ class AIPlayer extends Player {
 
 
 
-    update(foodGroup, playerGroup) {
+    update() {
         super.update();
+        var foodGroup = this.scene.food;
+        var playerGroup = this.scene.players;
 
         var mapping = {'rock': ['scissors', 'lizard'],
                        'paper': ['rock', 'spock'],
@@ -178,14 +130,11 @@ class AIPlayer extends Player {
             this.closestFood = closestFood;
         }
 
-        // if (this.closestPlayer == undefined || this.closestPlayer.active != true) {
-            var closestPlayer = this.findClosestItem(playerGroup, this);
-            this.closestPlayer = closestPlayer;
-        // }
+        var closestPlayer = this.findClosestItem(playerGroup, this);
+        this.closestPlayer = closestPlayer;
 
         var rad_angle = Phaser.Math.Angle.Between(this.x, this.y, this.closestPlayer.x, this.closestPlayer.y);
-        var deg_angle = Phaser.Math.RAD_TO_DEG * rad_angle;
-        var x = Math.cos(rad_angle) * this.acceleration;    // accelerateToObject 
+        var x = Math.cos(rad_angle) * this.acceleration;
         var y = Math.sin(rad_angle) * this.acceleration;
 
         if (this.closestPlayer != undefined) {
