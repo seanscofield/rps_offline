@@ -61,7 +61,7 @@ gameScene.create = function()
     var timedEvent = this.time.addEvent({ delay: 1000, callback: spawnAIPlayers, callbackScope: this, loop: true});
 
     // make it so that 
-    this.physics.add.overlap(this.players, this.food, transform, null, this);
+    this.physics.add.overlap(this.players, this.food, transformPlayerType, null, this);
     this.physics.add.overlap(this.players, this.players, playerCollision, null, this);
 
     // Display the menu (which is basically just a text box asking for your name)
@@ -81,7 +81,7 @@ gameScene.showMenuScene = function() {
 
     var scene = this;
     var element = scene.add.dom(5000, 5000).createFromHTML('<input type="text" name="nameField" placeholder="Enter your name" size="15" style="font-size: 32px;">'+
-                                                          '<input type="button" name="playButton" value="Let\'s Play" style="font-size: 32px">');
+                                                           '<input type="button" name="playButton" value="Let\'s Play" style="font-size: 32px">');
     element.originX = 0;
     element.originY = 0;
 
@@ -111,7 +111,7 @@ gameScene.showMenuScene = function() {
                 //  Populate the text with whatever they typed in
                 // create player circle
                 var spawnPoint = findBestSpawnPoint(10000, 10000, scene.players.children.entries);
-                let player = new MainPlayer({scene:scene,x:spawnPoint.x,y:spawnPoint.y,size:1,acceleration:3500,maxSpeed:400,type:"rock", name:inputText.value});
+                let player = new MainPlayer({scene:scene,x:spawnPoint.x,y:spawnPoint.y,size:1,acceleration:3500,maxSpeed:400,type:pickRandomPlayerType(), name:inputText.value});
                 scene.players.add(player);
                 scene.cameras.main.setZoom(0.67);
                 scene.cameras.main.startFollow(player);
@@ -157,11 +157,14 @@ function findBestSpawnPoint(map_width, map_height, existing_players) {
 
 }
 
+function pickRandomPlayerType() {
+    return ['rock', 'paper', 'scissors', 'lizard', 'spock'][Math.floor(Math.random() * 4) + 1]
+}
+
 function spawnAIPlayers() {
     var totalPlayers = this.players.children.entries.length;
     for (var i = totalPlayers; i < this.maxPlayers; i+=1) {
-        var mapping = ['rock', 'paper', 'scissors', 'lizard', 'spock'];
-        var image = mapping[Math.floor(Math.random() * 4) + 1];
+        var image = pickRandomPlayerType();
         var spawnPoint = findBestSpawnPoint(10000, 10000, this.players.children.entries);
         let enemy = new AIPlayer({scene:this,x:spawnPoint.x,y:spawnPoint.y,size:1, acceleration:1400, maxSpeed:350, type:image});
         this.players.add(enemy);
@@ -169,10 +172,8 @@ function spawnAIPlayers() {
     }
 }
 
-function transform(player, food) {
-    var mapping = ['rock', 'paper', 'scissors', 'lizard', 'spock'];
-    var new_type = mapping[Math.floor(Math.random() * 4) + 1];
-    player.update_type(new_type);
+function transformPlayerType(player, food) {
+    player.update_type(pickRandomPlayerType());
     food.destroy();
 }
 
