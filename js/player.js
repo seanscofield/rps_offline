@@ -8,6 +8,8 @@ class Player extends Phaser.GameObjects.Sprite {
         this.acceleration = config.acceleration;
         this.scale = config.size;
         this.player_type = config.type;
+        this.score = 0;
+        this.name = config.name;
 
         // enable physics on this sprite, and add a circular collider with a max speed
         this.scene.physics.world.enable(this);
@@ -16,7 +18,7 @@ class Player extends Phaser.GameObjects.Sprite {
         this.body.maxSpeed = this.maxSpeed;
 
         // Create text gameobject for the player's name. We'll make this follow the character in the update function
-        this.text = this.scene.add.text(-20, -this.displayHeight/2 - 45, config.name,
+        this.text = this.scene.add.text(-20, -this.displayHeight/2 - 45, this.name,
                                        {align: 'center', color: 'white'}).setOrigin(0.5);
     }
 
@@ -27,7 +29,6 @@ class Player extends Phaser.GameObjects.Sprite {
         this.setTexture(type);
         this.player_type = type;
     }
-
 
     /*
      * Destroy player and the text that follows it

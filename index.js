@@ -1,45 +1,39 @@
 // create a new scene named "Game"
 let gameScene = new Phaser.Scene('Game');
 
-var config = {
-    type: Phaser.AUTO,
-    width: window.innerWidth,
-    height: window.innerHeight,
-    parent: 'game',
-
-    physics: {
-        default: 'arcade',
-        arcade: {
-            debug: false,
-            gravity: { y: 0 }
-        },
-    },
-    scene: gameScene,
-    dom: {
-        createContainer: true
-    },
+var angleConfig = {
+    min: 0, max: 360
 };
-
-var game = new Phaser.Game(config);
-
+var speedConfig = {
+    min: 0, max: 200
+};
+var scaleConfig = {
+    start: 1, end: 0, ease: 'Linear'
+};
+var alphaConfig = {
+    start: 1, end: 0, ease: 'Linear'
+};
 
 gameScene.preload = function()
 {
     this.load.image('food', 'assets/SVG/sign-air.svg');
+    this.load.image('water', 'assets/SVG/sign-water.svg');
     this.load.image('rock', 'assets/Rock_120x121.png');
     this.load.image('paper', 'assets/Paper_120x119.png');
     this.load.image('scissors', 'assets/Scissors_120x120.png');
     this.load.image('lizard', 'assets/Lizard_120x119.png');
     this.load.image('spock', 'assets/Spock_120x120.png');
 
-    this.load.html('nameform', 'assets/text/newnameform.html');
+    this.load.html('scores', 'assets/scores.html');
+    this.load.css('highscores_css', 'assets/myTable.css');
     this.load.text('names', 'assets/names.txt');
+    this.load.image('spark1', 'assets/smoke.png');
 }
 
 gameScene.create = function()
 {
     // The maximum number of players
-    this.maxPlayers = 100;
+    this.maxPlayers = 150;
 
     // create a collision group for player circles
     this.players = this.physics.add.group({
@@ -66,18 +60,40 @@ gameScene.create = function()
     this.physics.add.overlap(this.players, this.food, this.transformPlayerType, null, this);
     this.physics.add.overlap(this.players, this.players, this.playerCollision, null, this);
 
-    this.cameras.main.setBackgroundColor(0xd1f5ff);
+    this.cameras.main.setBackgroundColor(0x000000);
     this.cameras.main.setZoom(0.075);
 
     // Display the menu (which is basically just a text box asking for your name)
     this.showMenuScene(5000, 5000);
 }
 
+function compare(player_score_1, player_score_2) {
+    if (player_score_1[1] > player_score_2[1]) {
+        return -1;
+    } else if (player_score_1[1] < player_score_2[1]) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 gameScene.update = function()
 {
     // Run each player's update function
+    var scores = [];
     for (player of this.players.children.entries) {
         player.update();
+        scores.push([player.name, player.score]);
+    }
+
+    scores.sort(compare);
+
+    var highScoresTable = uiScene.element;
+
+    var childElements = highScoresTable.node.children[2].tBodies[0].children;
+    for (var i = 0; i < childElements.length && i < scores.length; i += 1) {
+        childElements[i].children[0].innerText = scores[i][0];
+        childElements[i].children[1].innerText = scores[i][1];
     }
 }
 
@@ -170,7 +186,7 @@ function pickRandomPlayerType() {
 
 gameScene.getRandomBotName = function() {
     var names = this.cache.text.get('names').split("\n");
-    return "bot_" + names[Math.floor(Math.random() * names.length) + 1].toLowerCase();
+    return "bot_" + names[Math.floor(Math.random() * names.length)].toLowerCase();
 }
 
 gameScene.spawnAIPlayers = function() {
@@ -202,8 +218,10 @@ gameScene.playerCollision = function(player_1, player_2) {
     var player_to_destroy;
     if (mapping[player_1_type].includes(player_2_type)) {
         player_to_destroy = player_2;
+        player_1.score += 1;
     } else if (mapping[player_2_type].includes(player_1_type)) {
         player_to_destroy = player_1;
+        player_2.score += 1;
     }
 
     if (player_to_destroy) {
@@ -233,7 +251,98 @@ gameScene.playerCollision = function(player_1, player_2) {
             });
         }
 
+        this.emitter = this.add.particles(player_to_destroy.player_type).createEmitter({
+            name: 'sparks',
+            x: player_to_destroy.x,
+            y: player_to_destroy.y,
+            gravityY: 300,
+            speed: speedConfig,
+            angle: angleConfig,
+            scale: scaleConfig,
+            alpha: alphaConfig,
+            blendMode: 'SCREEN',
+            lifespan: 1000
+        });
+        // this.time.delayedCall(1000, ()=>{ this.emitter.explode()});
+        this.emitter.explode(5);
         player_to_destroy.destroy();
     }
 
 }
+
+
+
+
+
+
+
+
+
+
+var UIScene = new Phaser.Class({
+
+    Extends: Phaser.Scene,
+
+    initialize:
+
+    function UIScene ()
+    {
+        Phaser.Scene.call(this, { key: 'UIScene', active: true });
+        console.log("YESRS");
+
+        this.score = 0;
+    },
+
+    preload: function() {
+        this.load.html('scores', 'assets/scores.html');
+        this.load.css('highscores_css', 'assets/myTable.css');
+    },
+
+    create: function ()
+    {
+        //  Our Text object to display the Score
+
+        //  Grab a reference to the Game Scene
+        var ourGame = gameScene;
+
+        var element = this.add.dom(0, 0).createFromCache('scores');
+        element.setOrigin(0);
+        a = element;
+        element.x += window.innerWidth - element.width - 100;
+        element.y += 20;
+        this.element = element;
+
+        //  Listen for events from it
+        ourGame.events.on('addScore', function () {
+
+            this.score += 10;
+
+            info.setText('Score: ' + this.score);
+
+        }, this);
+    }
+
+});
+
+var uiScene = new UIScene();
+
+var config = {
+    type: Phaser.AUTO,
+    width: window.innerWidth,
+    height: window.innerHeight,
+    parent: 'game',
+
+    physics: {
+        default: 'arcade',
+        arcade: {
+            debug: false,
+            gravity: { y: 0 }
+        },
+    },
+    scene: [ gameScene, uiScene ],
+    dom: {
+        createContainer: true
+    },
+};
+
+var game = new Phaser.Game(config);

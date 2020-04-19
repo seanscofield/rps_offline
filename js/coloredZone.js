@@ -16,7 +16,7 @@ class MapArea extends Phaser.GameObjects.Graphics {
 
         this.spawnFood(150);
 
-        var timedEvent = this.scene.time.addEvent({ delay: 200, callback: this.addOneFood, callbackScope: this, loop: true});
+        var timedEvent = this.scene.time.addEvent({ delay: 100, callback: this.addOneFood, callbackScope: this, loop: true});
     }
 
     spawnFood(numFood) {
