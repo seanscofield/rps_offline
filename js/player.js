@@ -51,20 +51,6 @@ class Player extends Phaser.GameObjects.Sprite {
 class MainPlayer extends Player {
 
     destroy() {
-        var text = this.scene.add.text(this.x, this.y - 100, 'You lose!',
-                                       {align: 'center', color: 'white', fontSize: '64px'}).setOrigin(0.5);
-        text.setTint(0xff00ff, 0xffff00, 0x0000ff, 0xff0000);
-        var tween = this.scene.tweens.add({
-            targets: text,
-            alpha: { from: 0, to: 1 },
-            // alpha: { start: 0, to: 1 },
-            // alpha: 1,
-            // alpha: '+=1',
-            ease: 'Linear',       // 'Cubic', 'Elastic', 'Bounce', 'Back'
-            duration: 1000,
-            repeat: 0,            // -1: infinity
-            yoyo: false
-        });
         this.scene.showMenuScene(this.x, this.y);
         super.destroy();
     }

@@ -33,6 +33,7 @@ gameScene.preload = function()
     this.load.image('spock', 'assets/Spock_120x120.png');
 
     this.load.html('nameform', 'assets/text/newnameform.html');
+    this.load.text('names', 'assets/names.txt');
 }
 
 gameScene.create = function()
@@ -58,11 +59,12 @@ gameScene.create = function()
     this.map = new MapArea({scene:this, x:0, y:0, sizeX:10000, sizeY:10000, color:'blue'});
 
     // On an interval, check if AI Players need to be spawned
-    var timedEvent = this.time.addEvent({ delay: 1000, callback: spawnAIPlayers, callbackScope: this, loop: true});
+    this.spawnAIPlayers();
+    var timedEvent = this.time.addEvent({ delay: 5000, callback: this.spawnAIPlayers, callbackScope: this, loop: true});
 
     // set up functions that should be run when players collide with each other or food
-    this.physics.add.overlap(this.players, this.food, transformPlayerType, null, this);
-    this.physics.add.overlap(this.players, this.players, playerCollision, null, this);
+    this.physics.add.overlap(this.players, this.food, this.transformPlayerType, null, this);
+    this.physics.add.overlap(this.players, this.players, this.playerCollision, null, this);
 
     this.cameras.main.setBackgroundColor(0xd1f5ff);
     this.cameras.main.setZoom(0.075);
@@ -111,7 +113,10 @@ gameScene.showMenuScene = function(x, y) {
                 this.setVisible(false);
 
                 //  Populate the text with whatever they typed in
-                // create player circle
+                // create player circlej
+                if (scene.text) {
+                    scene.text.setVisible(false);
+                }
                 var spawnPoint = findBestSpawnPoint(10000, 10000, scene.players.children.entries);
                 let player = new MainPlayer({scene:scene,x:spawnPoint.x,y:spawnPoint.y,size:1,acceleration:3500,maxSpeed:400,type:pickRandomPlayerType(), name:inputText.value});
                 scene.players.add(player);
@@ -163,24 +168,29 @@ function pickRandomPlayerType() {
     return ['rock', 'paper', 'scissors', 'lizard', 'spock'][Math.floor(Math.random() * 4) + 1]
 }
 
-function spawnAIPlayers() {
+gameScene.getRandomBotName = function() {
+    var names = this.cache.text.get('names').split("\n");
+    return "bot_" + names[Math.floor(Math.random() * names.length) + 1].toLowerCase();
+}
+
+gameScene.spawnAIPlayers = function() {
     var totalPlayers = this.players.children.entries.length;
     for (var i = totalPlayers; i < this.maxPlayers; i+=1) {
         var image = pickRandomPlayerType();
         var spawnPoint = findBestSpawnPoint(10000, 10000, this.players.children.entries);
-        let enemy = new AIPlayer({scene:this,x:spawnPoint.x,y:spawnPoint.y,size:1, acceleration:1400, maxSpeed:350, type:image});
+        let enemy = new AIPlayer({scene:this,x:spawnPoint.x,y:spawnPoint.y,size:1, acceleration:1400, maxSpeed:350, type:image, name: this.getRandomBotName()});
         this.players.add(enemy);
         enemy.body.collideWorldBounds = true;
     }
 }
 
-function transformPlayerType(player, food) {
+gameScene.transformPlayerType = function(player, food) {
     player.update_type(pickRandomPlayerType());
     food.destroy();
 }
 
 
-function playerCollision(player_1, player_2) {
+gameScene.playerCollision = function(player_1, player_2) {
     var mapping = {'rock': ['scissors', 'lizard'],
                    'paper': ['rock', 'spock'],
                    'scissors': ['paper', 'lizard'],
@@ -189,10 +199,41 @@ function playerCollision(player_1, player_2) {
                   }
     var player_1_type = player_1.player_type;
     var player_2_type = player_2.player_type;
+    var player_to_destroy;
     if (mapping[player_1_type].includes(player_2_type)) {
-        player_2.destroy();
+        player_to_destroy = player_2;
     } else if (mapping[player_2_type].includes(player_1_type)) {
-        player_1.destroy();
+        player_to_destroy = player_1;
+    }
+
+    if (player_to_destroy) {
+
+        if (player_to_destroy.constructor.name == 'MainPlayer') {
+            if (!this.text) {
+                this.text = this.add.text(player_to_destroy.x, player_to_destroy.y - 100, 'You lose!',
+                                           {align: 'center', color: 'white', fontSize: '64px'}).setOrigin(0.5);
+                this.text.setTint(0xff00ff, 0xffff00, 0x0000ff, 0xff0000);
+                this.text.setDepth(100);
+            }
+
+            this.text.setVisible(true);
+            this.text.x = player_to_destroy.x;
+            this.text.y = player_to_destroy.y - 100;
+            
+            var tween = this.tweens.add({
+                targets: this.text,
+                alpha: { from: 0, to: 1 },
+                // alpha: { start: 0, to: 1 },
+                // alpha: 1,
+                // alpha: '+=1',
+                ease: 'Linear',       // 'Cubic', 'Elastic', 'Bounce', 'Back'
+                duration: 1000,
+                repeat: 0,            // -1: infinity
+                yoyo: false
+            });
+        }
+
+        player_to_destroy.destroy();
     }
 
 }
