@@ -34,16 +34,4 @@ class MapArea extends Phaser.GameObjects.Graphics {
         this.spawnFood(1);
     }
 
-
-    findSafeSpawn() {
-        for (const fish of this.scene.fish.children.entries) {
-            // var dist = distance(this.x, this.y, food.x, food.y);
-            // if (dist < minDist) {
-            //     minDist = dist;
-            //     closestFood = food;
-            // }
-        }
-        return {"x": Math.floor(Math.random()*this.sizeX), "y": Math.floor(Math.random()*this.sizeY)};
-    }
-
 }

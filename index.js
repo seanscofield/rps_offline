@@ -10,7 +10,7 @@ var config = {
     physics: {
         default: 'arcade',
         arcade: {
-            debug: true,
+            debug: false,
             gravity: { y: 0 }
         },
     },
@@ -25,12 +25,12 @@ var game = new Phaser.Game(config);
 
 gameScene.preload = function()
 {
-    this.load.image('food', 'assets/SVG/sign-water.svg');
-    this.load.image('rock', 'assets/Rock.png');
-    this.load.image('paper', 'assets/Paper.png');
-    this.load.image('scissors', 'assets/Scissors.png');
-    this.load.image('lizard', 'assets/Lizard.png');
-    this.load.image('spock', 'assets/Spock.png');
+    this.load.image('food', 'assets/SVG/sign-air.svg');
+    this.load.image('rock', 'assets/Rock_120x121.png');
+    this.load.image('paper', 'assets/Paper_120x119.png');
+    this.load.image('scissors', 'assets/Scissors_120x120.png');
+    this.load.image('lizard', 'assets/Lizard_120x119.png');
+    this.load.image('spock', 'assets/Spock_120x120.png');
 
     this.load.html('nameform', 'assets/text/newnameform.html');
 }
@@ -38,7 +38,7 @@ gameScene.preload = function()
 gameScene.create = function()
 {
     // The maximum number of players
-    this.maxPlayers = 50;
+    this.maxPlayers = 100;
 
     // create a collision group for player circles
     this.players = this.physics.add.group({
@@ -60,12 +60,14 @@ gameScene.create = function()
     // On an interval, check if AI Players need to be spawned
     var timedEvent = this.time.addEvent({ delay: 1000, callback: spawnAIPlayers, callbackScope: this, loop: true});
 
-    // make it so that 
+    // set up functions that should be run when players collide with each other or food
     this.physics.add.overlap(this.players, this.food, transformPlayerType, null, this);
     this.physics.add.overlap(this.players, this.players, playerCollision, null, this);
 
     // Display the menu (which is basically just a text box asking for your name)
     this.showMenuScene();
+
+    this.cameras.main.setBackgroundColor(0xbbc2c4)
 }
 
 gameScene.update = function()
@@ -113,7 +115,7 @@ gameScene.showMenuScene = function() {
                 var spawnPoint = findBestSpawnPoint(10000, 10000, scene.players.children.entries);
                 let player = new MainPlayer({scene:scene,x:spawnPoint.x,y:spawnPoint.y,size:1,acceleration:3500,maxSpeed:400,type:pickRandomPlayerType(), name:inputText.value});
                 scene.players.add(player);
-                scene.cameras.main.setZoom(0.67);
+                scene.cameras.main.setZoom(1);
                 scene.cameras.main.startFollow(player);
                 player.body.collideWorldBounds = true;
             }
