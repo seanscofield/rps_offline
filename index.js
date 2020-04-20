@@ -181,7 +181,7 @@ function findBestSpawnPoint(map_width, map_height, existing_players) {
 }
 
 function pickRandomPlayerType() {
-    return ['rock', 'paper', 'scissors', 'lizard', 'spock'][Math.floor(Math.random() * 4) + 1]
+    return ['rock', 'paper', 'scissors', 'lizard', 'spock'][Math.floor(Math.random() * 5)]
 }
 
 gameScene.getRandomBotName = function() {
