@@ -52,7 +52,6 @@ class Player extends Phaser.GameObjects.Sprite {
 class MainPlayer extends Player {
 
     destroy() {
-        this.scene.showMenuScene(this.x, this.y);
         super.destroy();
     }
 
