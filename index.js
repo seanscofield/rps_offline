@@ -13,6 +13,19 @@ var alphaConfig = {
     start: 1, end: 0, ease: 'Linear'
 };
 
+function resize() {
+    var canvas = game.canvas, width = window.innerWidth, height = window.innerHeight;
+    var wratio = width / height, ratio = canvas.width / canvas.height;
+ 
+    if (wratio < ratio) {
+        canvas.style.width = width + "px";
+        canvas.style.height = (width / ratio) + "px";
+    } else {
+        canvas.style.width = (height * ratio) + "px";
+        canvas.style.height = height + "px";
+    }
+}
+
 
 function compare(player_score_1, player_score_2) {
     if (player_score_1[1] > player_score_2[1]) {
@@ -170,6 +183,8 @@ var GameScene = new Phaser.Class({
 
     create: function()
     {
+        window.addEventListener('resize', resize);
+        resize();
         // The maximum number of players
         this.maxPlayers = 100;
 
