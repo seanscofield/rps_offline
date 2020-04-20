@@ -33,7 +33,7 @@ gameScene.preload = function()
 gameScene.create = function()
 {
     // The maximum number of players
-    this.maxPlayers = 150;
+    this.maxPlayers = 100;
 
     // create a collision group for player circles
     this.players = this.physics.add.group({
