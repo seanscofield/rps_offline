@@ -33,7 +33,7 @@ gameScene.preload = function()
 gameScene.create = function()
 {
     // The maximum number of players
-    this.maxPlayers = 150;
+    this.maxPlayers = 100;
 
     // create a collision group for player circles
     this.players = this.physics.add.group({
@@ -181,7 +181,7 @@ function findBestSpawnPoint(map_width, map_height, existing_players) {
 }
 
 function pickRandomPlayerType() {
-    return ['rock', 'paper', 'scissors', 'lizard', 'spock'][Math.floor(Math.random() * 4) + 1]
+    return ['rock', 'paper', 'scissors', 'lizard', 'spock'][Math.floor(Math.random() * 5)]
 }
 
 gameScene.getRandomBotName = function() {
