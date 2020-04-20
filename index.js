@@ -314,6 +314,10 @@ var config = {
     width: window.innerWidth,
     height: window.innerHeight,
     parent: 'game',
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+    },
 
     physics: {
         default: 'arcade',
