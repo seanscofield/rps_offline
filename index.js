@@ -1,4 +1,4 @@
-// Declare some global variables that we'll be using
+// Declare some global variables/functions that we'll be using
 
 var angleConfig = {
     min: 0, max: 360
@@ -12,6 +12,54 @@ var scaleConfig = {
 var alphaConfig = {
     start: 1, end: 0, ease: 'Linear'
 };
+
+
+function compare(player_score_1, player_score_2) {
+    if (player_score_1[1] > player_score_2[1]) {
+        return -1;
+    } else if (player_score_1[1] < player_score_2[1]) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+function distanceFromNearestPlayer(x, y, players) {
+    var closestDist = null;
+    var closestSpot = null;
+    for (player of players) {
+        curDist = distance(player.x, player.y, x, y);
+        if (closestDist == null || curDist < closestDist) {
+            closestDist = curDist;
+            closestSpot = {"x": x, "y": y};
+        }
+    }
+    return closestDist;
+}
+
+function findBestSpawnPoint(map_width, map_height, existing_players) {
+    var bestSpot = {"x": map_width/2, "y": map_height/2};
+    var furthestDistance = -1;
+    var curDist;
+
+    for (var i = Math.floor(Math.random() * 999) + 1; i < map_width; i += 1000) {
+        for (var j = Math.floor(Math.random() * 999) + 1; j < map_height; j += 1000) {
+            curDist = distanceFromNearestPlayer(i, j, existing_players);
+            if (curDist != null && curDist > furthestDistance) {
+                bestSpot = {"x": i, "y": j};
+                furthestDistance = curDist;
+            }
+        }
+    }
+
+    return bestSpot;
+}
+
+function pickRandomPlayerType() {
+    return ['rock', 'paper', 'scissors', 'lizard', 'spock'][Math.floor(Math.random() * 5)]
+}
+
+
 
 
 /* Define UIScene class, which will be responsible for overlaying UI elements on the screen
@@ -35,8 +83,6 @@ var UIScene = new Phaser.Class({
 
     create: function ()
     {
-        //  Our Text object to display the Score
-
         //  Grab a reference to the Game Scene
         var ourGame = gameScene;
         var uiScene = this;
@@ -160,17 +206,18 @@ var GameScene = new Phaser.Class({
 
     update: function()
     {
-        // Run each player's update function
+        // Run each player's update function, and fetch each player's score.
         var scores = [];
         for (player of this.players.children.entries) {
             player.update();
             scores.push([player.name, player.score]);
         }
 
+        // Sort the scores of each player from highest to lowest
         scores.sort(compare);
 
+        // Update the high scores table
         var highScoresTable = uiScene.scoresTable;
-
         var childElements = highScoresTable.node.children[2].tBodies[0].children;
         for (var i = 0; i < childElements.length && i < scores.length; i += 1) {
             childElements[i].children[0].innerText = scores[i][0];
@@ -253,59 +300,7 @@ var GameScene = new Phaser.Class({
         player.update_type(pickRandomPlayerType());
         food.destroy();
     }
-
 });
-
-function compare(player_score_1, player_score_2) {
-    if (player_score_1[1] > player_score_2[1]) {
-        return -1;
-    } else if (player_score_1[1] < player_score_2[1]) {
-        return 1;
-    } else {
-        return 0;
-    }
-}
-
-
-var distance = function(x1, y1, x2, y2) {
-    return Math.sqrt( Math.pow((x1-x2), 2) + Math.pow((y1-y2), 2) );
-}
-
-function distanceFromNearestPlayer(x, y, players) {
-    var closestDist = null;
-    var closestSpot = null;
-    for (player of players) {
-        curDist = distance(player.x, player.y, x, y);
-        if (closestDist == null || curDist < closestDist) {
-            closestDist = curDist;
-            closestSpot = {"x": x, "y": y};
-        }
-    }
-    return closestDist;
-}
-
-function findBestSpawnPoint(map_width, map_height, existing_players) {
-    var bestSpot = {"x": map_width/2, "y": map_height/2};
-    var furthestDistance = -1;
-    var curDist;
-
-    for (var i = Math.floor(Math.random() * 999) + 1; i < map_width; i += 1000) {
-        for (var j = Math.floor(Math.random() * 999) + 1; j < map_height; j += 1000) {
-            curDist = distanceFromNearestPlayer(i, j, existing_players);
-            if (curDist != null && curDist > furthestDistance) {
-                bestSpot = {"x": i, "y": j};
-                furthestDistance = curDist;
-            }
-        }
-    }
-
-    return bestSpot;
-
-}
-
-function pickRandomPlayerType() {
-    return ['rock', 'paper', 'scissors', 'lizard', 'spock'][Math.floor(Math.random() * 5)]
-}
 
 
 
