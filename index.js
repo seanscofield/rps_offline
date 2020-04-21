@@ -13,6 +13,13 @@ var alphaConfig = {
     start: 1, end: 0, ease: 'Linear'
 };
 
+var mapping = {'rock': ['scissors', 'lizard'],
+               'paper': ['rock', 'spock'],
+               'scissors': ['paper', 'lizard'],
+               'lizard': ['spock', 'paper'],
+               'spock': ['scissors', 'rock']
+              }
+
 function resize() {
     var canvas = game.canvas, width = window.innerWidth, height = window.innerHeight;
     var wratio = width / height, ratio = canvas.width / canvas.height;
@@ -96,34 +103,32 @@ var UIScene = new Phaser.Class({
 
     create: function ()
     {
-        //  Grab a reference to the Game Scene
-        var ourGame = gameScene;
         var uiScene = this;
+        var ourGame = gameScene;
 
+        // Create high scores dom element, and put it at top-right corner of screen
         var scoresTable = this.add.dom(0, 0).createFromCache('scores');
         scoresTable.setOrigin(0);
         scoresTable.x += window.innerWidth - scoresTable.width - 100;
         scoresTable.y += 20;
         this.scoresTable = scoresTable;
 
-        uiScene.text = uiScene.add.text(window.innerWidth/2, window.innerHeight/2-100, 'You lose!',
+        // Create "You lose!" text, but make it invisible for now
+        var gameOverText = uiScene.add.text(window.innerWidth/2, window.innerHeight/2-100, 'You lose!',
                                            {align: 'center', color: 'white', fontSize: '64px'}).setOrigin(0.5);
-        uiScene.text.setTint(0xff00ff, 0xffff00, 0x0000ff, 0xff0000);
-        uiScene.text.setDepth(100);
-        uiScene.text.setVisible(false);
+        gameOverText.setTint(0xff00ff, 0xffff00, 0x0000ff, 0xff0000);
+        gameOverText.setDepth(100);
+        gameOverText.setVisible(false);
+        this.gameOverText = gameOverText;
 
-
+        // Create text box for entering name and play button for starting to play
         var nameBox = this.add.dom(0, 0).createFromHTML('<input type="text" name="nameField" placeholder="Enter your name" size="15" style="font-size: 32px;">'+
                                                         '<input type="button" name="playButton" value="Let\'s Play" style="font-size: 32px">');
-
-        this.nameBox = nameBox;
         nameBox.x = window.innerWidth/2;
         nameBox.y = window.innerHeight/2;
-
         nameBox.addListener('click');
+        this.nameBox = nameBox;
 
-        scene = gameScene;
-        var uiScene = this;
 
         nameBox.on('click', function (event) {
 
@@ -136,13 +141,13 @@ var UIScene = new Phaser.Class({
                 {
 
                     this.setVisible(false);
-                    uiScene.text.setVisible(false);
+                    uiScene.gameOverText.setVisible(false);
 
-                    var spawnPoint = findBestSpawnPoint(10000, 10000, scene.players.children.entries);
-                    let player = new MainPlayer({scene:scene,x:spawnPoint.x,y:spawnPoint.y,size:1,acceleration:3500,maxSpeed:400,type:pickRandomPlayerType(), name:inputText.value});
-                    scene.players.add(player);
-                    scene.cameras.main.setZoom(1);
-                    scene.cameras.main.startFollow(player);
+                    var spawnPoint = findBestSpawnPoint(ourGame.mapSize, ourGame.mapSize, ourGame.players.children.entries);
+                    let player = new MainPlayer({scene:ourGame,x:spawnPoint.x,y:spawnPoint.y,size:1,acceleration:3500,maxSpeed:400,type:pickRandomPlayerType(), name:inputText.value});
+                    ourGame.players.add(player);
+                    ourGame.cameras.main.setZoom(1);
+                    ourGame.cameras.main.startFollow(player);
                     player.body.collideWorldBounds = true;
                 }
             }
@@ -187,6 +192,7 @@ var GameScene = new Phaser.Class({
         resize();
         // The maximum number of players
         this.maxPlayers = 100;
+        this.mapSize = 10000;
 
         // create a collision group for player circles
         this.players = this.physics.add.group({
@@ -194,16 +200,17 @@ var GameScene = new Phaser.Class({
             bounceY: 0.5,
         });
 
+        this.possibleBotNames = this.cache.text.get('names').split("\n");
+
         // create a collision group for food circles
-        this.food = this.physics.add.group({
-        });
+        this.food = this.physics.add.group({});
 
         // Set the world bounds as a rectangle that starts at (0, 0) and has a width and height
-        this.physics.world.setBounds(0, 0, 10000, 10000);
+        this.physics.world.setBounds(0, 0, this.mapSize, this.mapSize);
 
         // Create a map area that has the same position and size as the world bounds. The
         // map area is essentially a grid overlay, but it also handles spawning food
-        this.map = new MapArea({scene:this, x:0, y:0, sizeX:10000, sizeY:10000, color:'blue'});
+        this.map = new MapArea({scene:this, x:0, y:0, sizeX:this.mapSize, sizeY:this.mapSize, color:'blue'});
 
         // On an interval, check if AI Players need to be spawned
         this.spawnAIPlayers();
@@ -215,7 +222,7 @@ var GameScene = new Phaser.Class({
 
         this.cameras.main.setBackgroundColor(0x000000);
         this.cameras.main.setZoom(0.075);
-        this.cameras.main.centerOn(5000, 5000)
+        this.cameras.main.centerOn(this.mapSize / 2, this.mapSize / 2);
     },
 
 
@@ -241,12 +248,6 @@ var GameScene = new Phaser.Class({
     },
 
     playerCollision: function(player_1, player_2) {
-        var mapping = {'rock': ['scissors', 'lizard'],
-                       'paper': ['rock', 'spock'],
-                       'scissors': ['paper', 'lizard'],
-                       'lizard': ['spock', 'paper'],
-                       'spock': ['scissors', 'rock']
-                      }
         var player_1_type = player_1.player_type;
         var player_2_type = player_2.player_type;
         var player_to_destroy;
@@ -259,52 +260,39 @@ var GameScene = new Phaser.Class({
         }
 
         if (player_to_destroy) {
-
             if (player_to_destroy.constructor.name == 'MainPlayer') {
-
-                uiScene.nameBox.setVisible(true);
-                uiScene.text.setVisible(true);
-                
-                var tween = this.tweens.add({
-                    targets: uiScene.text,
-                    alpha: { from: 0, to: 1 },
-                    // alpha: { start: 0, to: 1 },
-                    // alpha: 1,
-                    // alpha: '+=1',
-                    ease: 'Linear',       // 'Cubic', 'Elastic', 'Bounce', 'Back'
-                    duration: 1000,
-                    repeat: 0,            // -1: infinity
-                    yoyo: false
-                });
+                this.showGameOverText();
             }
-
-            this.emitter = this.add.particles(player_to_destroy.player_type).createEmitter({
-                name: 'sparks',
-                x: player_to_destroy.x,
-                y: player_to_destroy.y,
-                gravityY: 300,
-                speed: speedConfig,
-                angle: angleConfig,
-                scale: scaleConfig,
-                alpha: alphaConfig,
-                blendMode: 'SCREEN',
-                lifespan: 1000
-            });
-            this.emitter.explode(5);
             player_to_destroy.destroy();
         }
     },
 
+    showGameOverText: function() {
+        uiScene.nameBox.setVisible(true);
+        uiScene.gameOverText.setVisible(true);
+        
+        var tween = this.tweens.add({
+            targets: uiScene.gameOverText,
+            alpha: { from: 0, to: 1 },
+            // alpha: { start: 0, to: 1 },
+            // alpha: 1,
+            // alpha: '+=1',
+            ease: 'Linear',       // 'Cubic', 'Elastic', 'Bounce', 'Back'
+            duration: 1000,
+            repeat: 0,            // -1: infinity
+            yoyo: false
+        });
+    },
+
     getRandomBotName: function() {
-        var names = this.cache.text.get('names').split("\n");
-        return "bot_" + names[Math.floor(Math.random() * names.length)].toLowerCase();
+        return "bot_" + this.possibleBotNames[Math.floor(Math.random() * this.possibleBotNames.length)].toLowerCase();
     },
 
     spawnAIPlayers: function() {
         var totalPlayers = this.players.children.entries.length;
         for (var i = totalPlayers; i < this.maxPlayers; i+=1) {
             var image = pickRandomPlayerType();
-            var spawnPoint = findBestSpawnPoint(10000, 10000, this.players.children.entries);
+            var spawnPoint = findBestSpawnPoint(this.mapSize, this.mapSize, this.players.children.entries);
             let enemy = new AIPlayer({scene:this,x:spawnPoint.x,y:spawnPoint.y,size:1, acceleration:1400, maxSpeed:350, type:image, name: this.getRandomBotName()});
             this.players.add(enemy);
             enemy.body.collideWorldBounds = true;

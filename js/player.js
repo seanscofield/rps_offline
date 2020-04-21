@@ -35,6 +35,19 @@ class Player extends Phaser.GameObjects.Sprite {
      */
     destroy() {
         this.text.destroy();
+        var emitter = this.scene.add.particles(this.player_type).createEmitter({
+            name: 'sparks',
+            x: this.x,
+            y: this.y,
+            gravityY: 300,
+            speed: speedConfig,
+            angle: angleConfig,
+            scale: scaleConfig,
+            alpha: alphaConfig,
+            blendMode: 'SCREEN',
+            lifespan: 1000
+        });
+        emitter.explode(5);
         super.destroy();
     }
 
